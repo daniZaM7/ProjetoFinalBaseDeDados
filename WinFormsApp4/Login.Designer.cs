@@ -31,7 +31,6 @@
             button1 = new Button();
             label1 = new Label();
             txtServidor = new TextBox();
-            Hello_Click = new Button();
             label3 = new Label();
             label4 = new Label();
             txtUser = new TextBox();
@@ -40,7 +39,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(42, 218);
+            button1.Location = new Point(171, 222);
             button1.Name = "button1";
             button1.Size = new Size(140, 23);
             button1.TabIndex = 0;
@@ -67,16 +66,6 @@
             txtServidor.Tag = "";
             txtServidor.Text = "192.168.182.10";
             txtServidor.TextChanged += textBox1_TextChanged;
-            // 
-            // Hello_Click
-            // 
-            Hello_Click.Location = new Point(298, 218);
-            Hello_Click.Name = "Hello_Click";
-            Hello_Click.Size = new Size(143, 23);
-            Hello_Click.TabIndex = 5;
-            Hello_Click.Text = "Hello Table";
-            Hello_Click.UseVisualStyleBackColor = true;
-            Hello_Click.Click += button2_Click;
             // 
             // label3
             // 
@@ -124,7 +113,6 @@
             Controls.Add(txtUser);
             Controls.Add(label4);
             Controls.Add(label3);
-            Controls.Add(Hello_Click);
             Controls.Add(txtServidor);
             Controls.Add(label1);
             Controls.Add(button1);
@@ -139,7 +127,6 @@
         private Button button1;
         private Label label1;
         private TextBox txtServidor;
-        private Button Hello_Click;
         private Label label3;
         private Label label4;
         private TextBox txtUser;

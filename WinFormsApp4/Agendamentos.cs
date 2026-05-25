@@ -30,6 +30,8 @@ namespace WinFormsApp4
 
             // Evento para atualizar o preço sempre que clicar num serviço
             clbServicos.ItemCheck += (s, e) => this.BeginInvoke(new Action(CalcularTotalEmTempoReal));
+
+            cbPack.SelectedIndexChanged += (s, e) => AtualizarServicosPorPack();
         }
 
         private void Agendamentos_Load(object sender, EventArgs e)
@@ -55,9 +57,6 @@ namespace WinFormsApp4
             cbEstado.SelectedIndex = 0;
         }
 
-        // ========================================================
-        // CARREGAR DADOS DAS OUTRAS TABELAS
-        // ========================================================
         private void CarregarDadosAuxiliares()
         {
             using (SqlConnection CN = new SqlConnection(connectionString))
@@ -123,28 +122,28 @@ namespace WinFormsApp4
                     CN.Open();
                     // Esta query garante que mesmo que não haja Pack ou Funcionario, o agendamento aparece (LEFT JOIN)
                     string query = @"
-                SELECT 
-                    A.Num_Agend AS [ID], 
-                    A.Data_Hora AS [Data/Hora], 
-                    A.Estado, 
-                    A.Matricula, 
-                    P.Nome_Pack AS [Pack],
-                    F.Nome AS [Funcionário],
-                    A.Notas_Internas AS [Notas], 
-                    A.Valor_Total AS [Total]
-                FROM DETAIL_AUTOMOVEL.AGENDAMENTO A
-                -- Ligação para o Pack
-                LEFT JOIN DETAIL_AUTOMOVEL.AGENDAMENTO_PACK AP ON A.Num_Agend = AP.Num_Agend
-                LEFT JOIN DETAIL_AUTOMOVEL.PACK P ON AP.Cod_Pack = P.Cod_Pack
-                -- Ligação para o Funcionário
-                LEFT JOIN DETAIL_AUTOMOVEL.AGENDAMENTO_FUNCIONARIO AF ON A.Num_Agend = AF.Num_Agend
-                LEFT JOIN DETAIL_AUTOMOVEL.FUNCIONARIO F ON AF.Num_Func = F.Num_Func
-                WHERE A.Matricula LIKE @p OR A.Estado LIKE @p OR CAST(A.Num_Agend AS VARCHAR) LIKE @p
-                ORDER BY A.Data_Hora DESC";
+                    SELECT 
+                        A.Num_Agend AS [ID], 
+                        A.Data_Hora AS [Data/Hora], 
+                        A.Estado, 
+                        A.Matricula, 
+                        P.Nome_Pack AS [Pack],
+                        F.Nome AS [Funcionário],
+                        A.Notas_Internas AS [Notas], 
+                        A.Valor_Total AS [Total]
+                    FROM DETAIL_AUTOMOVEL.AGENDAMENTO A
+                    -- Ligação para o Pack
+                    LEFT JOIN DETAIL_AUTOMOVEL.AGENDAMENTO_PACK AP ON A.Num_Agend = AP.Num_Agend
+                    LEFT JOIN DETAIL_AUTOMOVEL.PACK P ON AP.Cod_Pack = P.Cod_Pack
+                    -- Ligação para o Funcionário
+                    LEFT JOIN DETAIL_AUTOMOVEL.AGENDAMENTO_FUNCIONARIO AF ON A.Num_Agend = AF.Num_Agend
+                    LEFT JOIN DETAIL_AUTOMOVEL.FUNCIONARIO F ON AF.Num_Func = F.Num_Func
+                    WHERE A.Matricula LIKE @p OR A.Estado LIKE @p OR CAST(A.Num_Agend AS VARCHAR) LIKE @p
+                    ORDER BY A.Data_Hora DESC";
 
                     using (SqlCommand cmd = new SqlCommand(query, CN))
                     {
-                        string termo = string.IsNullOrWhiteSpace(pesquisa) ? txtMatricula_Agend.Text : pesquisa;
+                        string termo = pesquisa;
                         cmd.Parameters.AddWithValue("@p", "%" + termo.Trim() + "%");
 
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
@@ -169,9 +168,6 @@ namespace WinFormsApp4
             }
         }
 
-        // ========================================================
-        // GUARDAR (AGORA SÓ GUARDA O PLANEAMENTO)
-        // ========================================================
         private void btnGuardar_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtMatricula_Agend.Text))
@@ -180,7 +176,7 @@ namespace WinFormsApp4
                 return;
             }
 
-            // Tratamento de valor para o SQL (converte "125.00 €" para decimal)
+            // Tratamento de valor para o SQL
             decimal valorParaGuardar = 0;
             string textoLimpo = txtValorTotal.Text.Replace(" €", "").Replace(",", ".").Trim();
             decimal.TryParse(textoLimpo, NumberStyles.Any, CultureInfo.InvariantCulture, out valorParaGuardar);
@@ -227,7 +223,7 @@ namespace WinFormsApp4
                             }
                         }
 
-                        // 2. LIMPEZA DE LIGAÇÕES ANTIGAS (Para evitar duplicados ou lixo ao editar)
+                        // 2. LIMPEZA DE LIGAÇÕES ANTIGAS
                         new SqlCommand($"DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_SERVICO WHERE Num_Agend = {idFinal}", CN, trans).ExecuteNonQuery();
                         new SqlCommand($"DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_PACK WHERE Num_Agend = {idFinal}", CN, trans).ExecuteNonQuery();
                         new SqlCommand($"DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_FUNCIONARIO WHERE Num_Agend = {idFinal}", CN, trans).ExecuteNonQuery();
@@ -245,7 +241,7 @@ namespace WinFormsApp4
                             }
                         }
 
-                        // 4. GRAVAR PACK (Aparecerá na grelha através do JOIN)
+                        // 4. GRAVAR PACK
                         if (cbPack.SelectedItem is ComboItem pack && pack.Id > 0)
                         {
                             string sqlP = "INSERT INTO DETAIL_AUTOMOVEL.AGENDAMENTO_PACK (Num_Agend, Cod_Pack) VALUES (@a, @p)";
@@ -257,7 +253,7 @@ namespace WinFormsApp4
                             }
                         }
 
-                        // 5. GRAVAR FUNCIONÁRIO (Aparecerá na grelha através do JOIN)
+                        // 5. GRAVAR FUNCIONÁRIO
                         if (cbFuncionario.SelectedItem is ComboItem func && func.Id > 0)
                         {
                             string sqlF = "INSERT INTO DETAIL_AUTOMOVEL.AGENDAMENTO_FUNCIONARIO (Num_Agend, Num_Func) VALUES (@a, @f)";
@@ -283,18 +279,54 @@ namespace WinFormsApp4
                             }
                         }
 
+                        // =========================================================
+                        // 7. A MAGIA DO SQL PROGRAMMING: CHAMAR A STORED PROCEDURE
+                        // =========================================================
+                        // Só desconta o stock se o carro estiver efetivamente pronto!
+                        if (cbEstado.Text == "Concluído")
+                        {
+                            using (SqlCommand cmdStock = new SqlCommand("DETAIL_AUTOMOVEL.sp_DescontarStock", CN, trans))
+                            {
+                                // Aqui dizemos ao C# que isto não é uma query normal, é uma SP!
+                                cmdStock.CommandType = CommandType.StoredProcedure;
+                                cmdStock.Parameters.AddWithValue("@Num_Agend", idFinal);
+                                cmdStock.ExecuteNonQuery();
+                            }
+                        }
+
+                        // Se chegou até aqui sem dar erro na SP nem nos inserts, grava tudo de vez!
                         trans.Commit();
-                        MessageBox.Show("Agendamento guardado com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Agendamento e Inventário atualizados com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                        // ATUALIZAÇÃO DA GRELHA
-                        CarregarAgendamentos(txtMatricula_Agend.Text);
-
-                        // ATUALIZAÇÃO DOS BOTÕES
+                        // ATUALIZAÇÃO DA GRELHA E BOTÕES
+                        CarregarAgendamentos(txtPesquisa.Text);
                         btnFaturacao.Enabled = (idAgendamentoSelecionado > 0 && cbEstado.Text == "Concluído");
                         btnCheckIn.Enabled = (idAgendamentoSelecionado > 0 && cbEstado.Text != "Concluído" && cbEstado.Text != "Cancelado");
 
-                        // Re-seleciona para garantir que os dados novos aparecem nos campos
-                        SelecionarPrimeiroAgendamento();
+                        // APAGAR ISTO:
+                        // SelecionarPrimeiroAgendamento();
+
+                        // COLOCAR ISTO NO LUGAR (A Memória da Grelha):
+                        bool linhaEncontrada = false;
+                        foreach (DataGridViewRow row in dgvAgendamentos.Rows)
+                        {
+                            if (row.Cells["ID"].Value != DBNull.Value && Convert.ToInt32(row.Cells["ID"].Value) == idFinal)
+                            {
+                                row.Selected = true;
+                                dgvAgendamentos.CurrentCell = row.Cells[0];
+
+                                // Simula o clique silenciosamente para atualizar as variáveis
+                                dgvAgendamentos_CellClick(dgvAgendamentos, new DataGridViewCellEventArgs(0, row.Index));
+                                linhaEncontrada = true;
+                                break;
+                            }
+                        }
+
+                        // Se por algum motivo não o encontrar na grelha, aí sim seleciona o primeiro
+                        if (!linhaEncontrada)
+                        {
+                            SelecionarPrimeiroAgendamento();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -444,6 +476,12 @@ namespace WinFormsApp4
             }
         }
 
+        private void cbPack_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Chama a tua função mágica que já faz o trabalho todo!
+            AtualizarServicosPorPack();
+        }
+
         private void CalcularTotalEmTempoReal()
         {
             decimal total = 0;
@@ -513,8 +551,6 @@ namespace WinFormsApp4
             CalcularTotalEmTempoReal();
         }
 
-        private void cbPack_SelectedIndexChanged(object sender, EventArgs e) => AtualizarServicosPorPack();
-
         private void btnNovo_Click(object sender, EventArgs e)
         {
             // 1. Volta ao Modo "Criar Novo" (ID 0 indica que ainda não existe no SQL)
@@ -582,42 +618,33 @@ namespace WinFormsApp4
                     {
                         CN.Open();
 
-                        // Tuas queries organizadas para apagar dependências primeiro
-                        string queryEliminar = @"
-                    -- Remove associações de serviços e packs
-                    DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_SERVICO WHERE Num_Agend = @id;
-                    DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_PACK WHERE Num_Agend = @id;
-                    
-                    -- Remove associações de funcionários e boxes
-                    DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_FUNCIONARIO WHERE Num_Agend = @id;
-                    DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO_BOX WHERE Num_Agend = @id;
-                    
-                    -- Remove o Check-In (se existir)
-                    DELETE FROM DETAIL_AUTOMOVEL.CHECK_IN WHERE Num_Agend = @id;
-                    
-                    -- Por fim, remove o Agendamento principal
-                    DELETE FROM DETAIL_AUTOMOVEL.AGENDAMENTO WHERE Num_Agend = @id;";
-
-                        using (SqlCommand cmd = new SqlCommand(queryEliminar, CN))
+                        // CHAMADA DA STORED PROCEDURE
+                        using (SqlCommand cmd = new SqlCommand("DETAIL_AUTOMOVEL.sp_EliminarAgendamento", CN))
                         {
-                            cmd.Parameters.AddWithValue("@id", idAgendamentoSelecionado);
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@Num_Agend", idAgendamentoSelecionado);
                             cmd.ExecuteNonQuery();
                         }
 
                         MessageBox.Show("Agendamento eliminado com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                         // Atualiza a interface
-                        CarregarAgendamentos();
+                        CarregarAgendamentos(txtPesquisa.Text);
                         btnNovo_Click(null, null);
                     }
                     catch (SqlException ex)
                     {
-                        // AVISO DIRETO: Se o erro for o 547 (Foreign Key), é quase certo que é a FATURA
+                        // AVISO DIRETO: Bloqueio de Contabilidade (Foreign Key da Fatura)
                         if (ex.Number == 547)
                         {
                             MessageBox.Show("NÃO PODE ELIMINAR: Este agendamento já tem uma FATURA emitida.\n\n" +
                                             "Para apagar este serviço, teria primeiro de anular a fatura correspondente no módulo de Faturação.",
                                             "Bloqueio de Contabilidade", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        }
+                        // AVISO DA STORED PROCEDURE: Se o estado for Concluído
+                        else if (ex.Number >= 50000)
+                        {
+                            MessageBox.Show(ex.Message, "Bloqueio de Estado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                         else
                         {
@@ -658,7 +685,7 @@ namespace WinFormsApp4
                     if (row.Cells["Matricula"].Value?.ToString() == txtMatricula_Agend.Text)
                     {
                         // Apanhámos o ID novo!
-                        idAgendamentoSelecionado = Convert.ToInt32(row.Cells["Num_Agend"].Value);
+                        idAgendamentoSelecionado = Convert.ToInt32(row.Cells["ID"].Value);
                         break;
                     }
                 }
@@ -674,8 +701,6 @@ namespace WinFormsApp4
         private void LimparCamposPreservandoMatricula()
         {
             idAgendamentoSelecionado = 0;
-            // txtMatricula_Agend.Clear(); <--- Não limpamos esta
-            // txtPesquisa.Clear();        <--- Nem esta
 
             txtNotas.Clear();
             txtValorTotal.Text = "0.00 €";
@@ -712,10 +737,21 @@ namespace WinFormsApp4
 
         private void btnFaturacao_Click(object sender, EventArgs e)
         {
-            // Passa o ConnectionString e o ID do Agendamento para o outro ecrã fazer a sua pesquisa automática!
-            Faturacao frmFatura = new Faturacao(this.connectionString, idAgendamentoSelecionado);
-            Navegacao.Abrir(this, frmFatura);
+            // 1. MÁGICA: Força a gravação para garantir que a BD sabe que o estado é "Concluído"
+            btnGuardar_Click(null, null);
+
+            // 2. Só avança para a Faturação se efetivamente guardou com sucesso e está Concluído
+            if (idAgendamentoSelecionado > 0 && cbEstado.Text == "Concluído")
+            {
+                Faturacao frmFatura = new Faturacao(this.connectionString, idAgendamentoSelecionado);
+                Navegacao.Abrir(this, frmFatura);
+            }
+            else
+            {
+                MessageBox.Show("O Agendamento precisa de ser guardado com o estado 'Concluído' antes de poder ser faturado.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
+
 
 
 

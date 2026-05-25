@@ -1,6 +1,6 @@
 ﻿namespace WinFormsApp4
 {
-    partial class Produtos
+    partial class c
     {
         /// <summary>
         /// Required designer variable.
@@ -45,6 +45,11 @@
             label5 = new Label();
             btnPesquisar = new Button();
             btnVoltar = new Button();
+            label1 = new Label();
+            txtCapacidade = new TextBox();
+            txtMinimo = new TextBox();
+            label2 = new Label();
+            label3 = new Label();
             ((System.ComponentModel.ISupportInitialize)dgvProdutos).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numStock).BeginInit();
             SuspendLayout();
@@ -149,9 +154,9 @@
             lblProdutos.AutoSize = true;
             lblProdutos.Location = new Point(210, 478);
             lblProdutos.Name = "lblProdutos";
-            lblProdutos.Size = new Size(55, 15);
+            lblProdutos.Size = new Size(40, 15);
             lblProdutos.TabIndex = 62;
-            lblProdutos.Text = "Produtos";
+            lblProdutos.Text = "Nome";
             // 
             // Stock
             // 
@@ -190,11 +195,57 @@
             btnVoltar.UseVisualStyleBackColor = true;
             btnVoltar.Click += btnVoltar_Click;
             // 
-            // Produtos
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(482, 468);
+            label1.Name = "label1";
+            label1.Size = new Size(135, 15);
+            label1.TabIndex = 67;
+            label1.Text = "Capacidade Embalagem";
+            // 
+            // txtCapacidade
+            // 
+            txtCapacidade.Location = new Point(645, 465);
+            txtCapacidade.Name = "txtCapacidade";
+            txtCapacidade.Size = new Size(43, 23);
+            txtCapacidade.TabIndex = 68;
+            // 
+            // txtMinimo
+            // 
+            txtMinimo.Location = new Point(645, 523);
+            txtMinimo.Name = "txtMinimo";
+            txtMinimo.Size = new Size(100, 23);
+            txtMinimo.TabIndex = 69;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(513, 526);
+            label2.Name = "label2";
+            label2.Size = new Size(81, 15);
+            label2.TabIndex = 70;
+            label2.Text = "Stock Minimo";
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(690, 470);
+            label3.Name = "label3";
+            label3.Size = new Size(13, 15);
+            label3.TabIndex = 71;
+            label3.Text = "L";
+            // 
+            // c
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1540, 562);
+            Controls.Add(label3);
+            Controls.Add(label2);
+            Controls.Add(txtMinimo);
+            Controls.Add(txtCapacidade);
+            Controls.Add(label1);
             Controls.Add(btnVoltar);
             Controls.Add(btnPesquisar);
             Controls.Add(label5);
@@ -212,7 +263,7 @@
             Controls.Add(btnGuardar);
             Controls.Add(btnNovo);
             Controls.Add(dgvProdutos);
-            Name = "Produtos";
+            Name = "c";
             Text = "Produtos";
             WindowState = FormWindowState.Maximized;
             ((System.ComponentModel.ISupportInitialize)dgvProdutos).EndInit();
@@ -240,5 +291,10 @@
         private Label label5;
         private Button btnPesquisar;
         private Button btnVoltar;
+        private Label label1;
+        private TextBox txtCapacidade;
+        private TextBox txtMinimo;
+        private Label label2;
+        private Label label3;
     }
 }

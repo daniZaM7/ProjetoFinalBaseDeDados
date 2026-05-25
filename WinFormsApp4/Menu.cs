@@ -29,7 +29,7 @@ namespace WinFormsApp4
 
         private void btnProdutos_Click(object sender, EventArgs e)
         {
-            Produtos ecraProdutos = new Produtos(this.connectionString);
+            c ecraProdutos = new c(this.connectionString);
             Navegacao.Abrir(this, ecraProdutos);
         }
 

@@ -45,6 +45,7 @@
             txtValorTotal = new TextBox();
             btnEmitirFatura = new Button();
             btnEliminar = new Button();
+            lblFaturacaoMensal = new Label();
             ((System.ComponentModel.ISupportInitialize)dgvFaturacao).BeginInit();
             SuspendLayout();
             // 
@@ -198,11 +199,20 @@
             btnEliminar.UseVisualStyleBackColor = true;
             btnEliminar.Click += btnEliminar_Click;
             // 
+            // lblFaturacaoMensal
+            // 
+            lblFaturacaoMensal.AutoSize = true;
+            lblFaturacaoMensal.Location = new Point(1122, 448);
+            lblFaturacaoMensal.Name = "lblFaturacaoMensal";
+            lblFaturacaoMensal.Size = new Size(0, 15);
+            lblFaturacaoMensal.TabIndex = 74;
+            // 
             // Faturacao
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1598, 659);
+            Controls.Add(lblFaturacaoMensal);
             Controls.Add(btnEliminar);
             Controls.Add(btnEmitirFatura);
             Controls.Add(label5);
@@ -248,5 +258,6 @@
         private TextBox txtValorTotal;
         private Button btnEmitirFatura;
         private Button btnEliminar;
+        private Label lblFaturacaoMensal;
     }
 }

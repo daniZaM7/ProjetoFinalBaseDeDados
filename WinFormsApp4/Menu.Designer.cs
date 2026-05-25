@@ -41,9 +41,9 @@
             // 
             // btnClientes
             // 
-            btnClientes.Location = new Point(224, 89);
+            btnClientes.Location = new Point(361, 237);
             btnClientes.Name = "btnClientes";
-            btnClientes.Size = new Size(75, 23);
+            btnClientes.Size = new Size(98, 23);
             btnClientes.TabIndex = 0;
             btnClientes.Text = "Clientes";
             btnClientes.UseVisualStyleBackColor = true;
@@ -51,7 +51,7 @@
             // 
             // btnAgendamentos
             // 
-            btnAgendamentos.Location = new Point(201, 150);
+            btnAgendamentos.Location = new Point(361, 289);
             btnAgendamentos.Name = "btnAgendamentos";
             btnAgendamentos.Size = new Size(98, 24);
             btnAgendamentos.TabIndex = 1;
@@ -61,17 +61,17 @@
             // 
             // btnProdutos
             // 
-            btnProdutos.Location = new Point(700, 322);
+            btnProdutos.Location = new Point(779, 267);
             btnProdutos.Name = "btnProdutos";
-            btnProdutos.Size = new Size(75, 23);
+            btnProdutos.Size = new Size(110, 23);
             btnProdutos.TabIndex = 2;
-            btnProdutos.Text = "Produtos";
+            btnProdutos.Text = "Produtos e  Stock";
             btnProdutos.UseVisualStyleBackColor = true;
             btnProdutos.Click += btnProdutos_Click;
             // 
             // btnServicos
             // 
-            btnServicos.Location = new Point(700, 383);
+            btnServicos.Location = new Point(794, 319);
             btnServicos.Name = "btnServicos";
             btnServicos.Size = new Size(75, 23);
             btnServicos.TabIndex = 3;
@@ -81,7 +81,7 @@
             // 
             // btnPacks
             // 
-            btnPacks.Location = new Point(700, 441);
+            btnPacks.Location = new Point(794, 377);
             btnPacks.Name = "btnPacks";
             btnPacks.Size = new Size(75, 23);
             btnPacks.TabIndex = 4;
@@ -90,7 +90,7 @@
             // 
             // btnFuncionarios
             // 
-            btnFuncionarios.Location = new Point(1115, 107);
+            btnFuncionarios.Location = new Point(1156, 282);
             btnFuncionarios.Name = "btnFuncionarios";
             btnFuncionarios.Size = new Size(98, 24);
             btnFuncionarios.TabIndex = 6;
@@ -100,7 +100,7 @@
             // 
             // btnBoxes
             // 
-            btnBoxes.Location = new Point(1115, 171);
+            btnBoxes.Location = new Point(1156, 346);
             btnBoxes.Name = "btnBoxes";
             btnBoxes.Size = new Size(98, 24);
             btnBoxes.TabIndex = 7;
@@ -110,7 +110,7 @@
             // 
             // btnCheckIn
             // 
-            btnCheckIn.Location = new Point(201, 207);
+            btnCheckIn.Location = new Point(361, 346);
             btnCheckIn.Name = "btnCheckIn";
             btnCheckIn.Size = new Size(98, 24);
             btnCheckIn.TabIndex = 8;
@@ -120,9 +120,9 @@
             // 
             // txtFaturacao
             // 
-            txtFaturacao.Location = new Point(213, 331);
+            txtFaturacao.Location = new Point(361, 400);
             txtFaturacao.Name = "txtFaturacao";
-            txtFaturacao.Size = new Size(75, 23);
+            txtFaturacao.Size = new Size(98, 23);
             txtFaturacao.TabIndex = 9;
             txtFaturacao.Text = "Faturacao";
             txtFaturacao.UseVisualStyleBackColor = true;
@@ -132,6 +132,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(0, 0, 64);
             ClientSize = new Size(1523, 562);
             Controls.Add(txtFaturacao);
             Controls.Add(btnCheckIn);
@@ -148,7 +149,6 @@
             Click += btnPacks_Click;
             ResumeLayout(false);
         }
-
         #endregion
 
         private Button btnClientes;

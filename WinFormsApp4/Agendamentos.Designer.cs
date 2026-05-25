@@ -222,7 +222,7 @@
             cbPack.FormattingEnabled = true;
             cbPack.Location = new Point(636, 390);
             cbPack.Name = "cbPack";
-            cbPack.Size = new Size(121, 23);
+            cbPack.Size = new Size(155, 23);
             cbPack.TabIndex = 61;
             // 
             // label3
@@ -237,9 +237,9 @@
             // clbServicos
             // 
             clbServicos.FormattingEnabled = true;
-            clbServicos.Location = new Point(1039, 380);
+            clbServicos.Location = new Point(1023, 380);
             clbServicos.Name = "clbServicos";
-            clbServicos.Size = new Size(120, 94);
+            clbServicos.Size = new Size(183, 94);
             clbServicos.TabIndex = 63;
             clbServicos.SelectedIndexChanged += cbPack_SelectedIndexChanged;
             // 
@@ -255,7 +255,7 @@
             // clbBoxes
             // 
             clbBoxes.FormattingEnabled = true;
-            clbBoxes.Location = new Point(998, 505);
+            clbBoxes.Location = new Point(1025, 502);
             clbBoxes.Name = "clbBoxes";
             clbBoxes.Size = new Size(181, 94);
             clbBoxes.TabIndex = 65;

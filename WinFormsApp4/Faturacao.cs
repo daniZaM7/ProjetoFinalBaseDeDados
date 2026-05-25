@@ -10,11 +10,8 @@ namespace WinFormsApp4
         private string connectionString;
         private int idAgendSelecionado = 0;
         private decimal valorCalculado = 0;
-
-        // O "bolso" para guardar o ID que vem do comboio do Agendamento
         private int idQueVeioDoAgendamento = 0;
 
-        // NOVO CONSTRUTOR: Agora já aceita a Connection String e o ID!
         public Faturacao(string connString, int idAgendamento = 0)
         {
             InitializeComponent();
@@ -24,31 +21,107 @@ namespace WinFormsApp4
 
         private void Faturacao_Load(object sender, EventArgs e)
         {
-            // Prepara a ComboBox de filtro
             cbFiltro.Items.Clear();
             cbFiltro.Items.AddRange(new string[] { "Por Faturar (Concluídos)", "Faturas Emitidas" });
-            cbFiltro.SelectedIndex = 0;
 
-            // O TRUQUE MÁGICO: Se viermos do Agendamento, pesquisa logo pelo ID!
+            // Se viemos do ecrã de Agendamentos com um ID específico
             if (idQueVeioDoAgendamento > 0)
             {
                 txtPesquisa.Text = idQueVeioDoAgendamento.ToString();
+
+                // Inteligência: Vamos perguntar à BD se isto já tem fatura para abrir a aba certa!
+                using (SqlConnection CN = new SqlConnection(connectionString))
+                {
+                    try
+                    {
+                        CN.Open();
+                        using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM DETAIL_AUTOMOVEL.FATURACAO WHERE Num_Agend = @id", CN))
+                        {
+                            cmd.Parameters.AddWithValue("@id", idQueVeioDoAgendamento);
+                            int jaFoiFaturado = (int)cmd.ExecuteScalar();
+
+                            if (jaFoiFaturado > 0)
+                            {
+                                cbFiltro.SelectedIndex = 1; // Abre na aba "Faturas Emitidas"
+                            }
+                            else
+                            {
+                                cbFiltro.SelectedIndex = 0; // Abre na aba "Por Faturar"
+                            }
+                        }
+                    }
+                    catch { cbFiltro.SelectedIndex = 0; }
+                }
+            }
+            else
+            {
+                // Se abriu o ecrã sem vir de um agendamento específico
+                cbFiltro.SelectedIndex = 0;
             }
 
-            CarregarGrelha(txtPesquisa.Text);
+            AtualizarFaturacaoDoMes();
 
-            // Clica na linha automaticamente
-            if (idQueVeioDoAgendamento > 0)
+            // Agora sim, a grelha tem os dados certos e vai selecioná-los automaticamente!
+            SelecionarLinhaNaGrelha(idQueVeioDoAgendamento);
+        }
+
+        // ===================================================================
+        // FUNÇÃO DE UTILIDADE: Seleciona uma linha específica e clica nela
+        // ===================================================================
+        private void SelecionarLinhaNaGrelha(int idProcurado)
+        {
+            if (idProcurado > 0)
             {
                 foreach (DataGridViewRow r in dgvFaturacao.Rows)
                 {
-                    if (r.Cells["Num_Agend"].Value != DBNull.Value && Convert.ToInt32(r.Cells["Num_Agend"].Value) == idQueVeioDoAgendamento)
+                    if (r.Cells["Num_Agend"].Value != DBNull.Value && Convert.ToInt32(r.Cells["Num_Agend"].Value) == idProcurado)
                     {
                         r.Selected = true;
                         dgvFaturacao.CurrentCell = r.Cells[0];
                         dgvFaturacao_CellClick(dgvFaturacao, new DataGridViewCellEventArgs(0, r.Index));
-                        break;
+                        return; // Pára de procurar assim que encontrar
                     }
+                }
+            }
+
+            // Se chegou aqui e não encontrou (ou se o ID for 0), tenta selecionar o primeiro se existir
+            if (dgvFaturacao.Rows.Count > 0)
+            {
+                dgvFaturacao.Rows[0].Selected = true;
+                dgvFaturacao.CurrentCell = dgvFaturacao.Rows[0].Cells[0];
+                dgvFaturacao_CellClick(dgvFaturacao, new DataGridViewCellEventArgs(0, 0));
+            }
+        }
+
+        private void AtualizarFaturacaoDoMes()
+        {
+            using (SqlConnection CN = new SqlConnection(this.connectionString))
+            {
+                try
+                {
+                    CN.Open();
+                    string sql = "SELECT DETAIL_AUTOMOVEL.fn_FaturacaoMensal(@mes, @ano)";
+                    using (SqlCommand cmd = new SqlCommand(sql, CN))
+                    {
+                        cmd.Parameters.AddWithValue("@mes", DateTime.Now.Month);
+                        cmd.Parameters.AddWithValue("@ano", DateTime.Now.Year);
+
+                        object resultado = cmd.ExecuteScalar();
+
+                        if (resultado != DBNull.Value && resultado != null)
+                        {
+                            decimal totalFaturado = Convert.ToDecimal(resultado);
+                            lblFaturacaoMensal.Text = "Faturação este Mês: " + totalFaturado.ToString("0.00") + " €";
+                        }
+                        else
+                        {
+                            lblFaturacaoMensal.Text = "Faturação este Mês: 0,00 €";
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    lblFaturacaoMensal.Text = "Erro a ler métricas";
                 }
             }
         }
@@ -71,8 +144,7 @@ namespace WinFormsApp4
                                 WHERE A.Estado = 'Concluído' 
                                 AND A.Num_Agend NOT IN (SELECT Num_Agend FROM DETAIL_AUTOMOVEL.FATURACAO)
                                 AND (A.Matricula LIKE @p OR C.Nome LIKE @p OR CAST(A.Num_Agend AS VARCHAR) LIKE @p)";
-
-                        btnEmitirFatura.Enabled = true; // Acende o botão
+                        btnEmitirFatura.Enabled = true;
                     }
                     else // JÁ FATURADOS
                     {
@@ -83,8 +155,7 @@ namespace WinFormsApp4
                                 JOIN DETAIL_AUTOMOVEL.CLIENTE C ON V.NIF_Cliente = C.NIF_Cliente
                                 WHERE A.Matricula LIKE @p OR C.Nome LIKE @p OR CAST(A.Num_Agend AS VARCHAR) LIKE @p
                                 ORDER BY F.Data_Emissao DESC";
-
-                        btnEmitirFatura.Enabled = false; // Desliga o botão (já está pago!)
+                        btnEmitirFatura.Enabled = false;
                     }
 
                     using (SqlCommand cmd = new SqlCommand(sql, CN))
@@ -140,8 +211,8 @@ namespace WinFormsApp4
                     try
                     {
                         CN.Open();
-                        // Gera um número de fatura aleatório de 6 dígitos
                         int numFaturaNova = new Random().Next(100000, 999999);
+                        int agendamentoGravado = idAgendSelecionado; // Memoriza o ID
 
                         string sqlFatura = "INSERT INTO DETAIL_AUTOMOVEL.FATURACAO (Num_Fatura, NIF_Entidade, Data_Emissao, Valor, Num_Agend) VALUES (@fatura, @nif, @data, @valor, @agend)";
                         using (SqlCommand cmdF = new SqlCommand(sqlFatura, CN))
@@ -150,15 +221,21 @@ namespace WinFormsApp4
                             cmdF.Parameters.AddWithValue("@nif", txtNIF.Text);
                             cmdF.Parameters.AddWithValue("@data", DateTime.Now);
                             cmdF.Parameters.AddWithValue("@valor", valorCalculado);
-                            cmdF.Parameters.AddWithValue("@agend", idAgendSelecionado);
+                            cmdF.Parameters.AddWithValue("@agend", agendamentoGravado);
                             cmdF.ExecuteNonQuery();
                         }
 
                         MessageBox.Show("Fatura registada com sucesso!", "Faturação", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                        LimparCampos();
-                        txtPesquisa.Clear();
-                        CarregarGrelha();
+                        // O agendamento desapareceu dos pendentes, por isso a grelha vai ser vazia. 
+                        // Vamos mudar para o separador de faturas emitidas para o utilizador ver o resultado
+                        cbFiltro.SelectedIndex = 1;
+
+                        CarregarGrelha(txtPesquisa.Text);
+                        AtualizarFaturacaoDoMes();
+
+                        // Foca na fatura acabada de criar
+                        SelecionarLinhaNaGrelha(agendamentoGravado);
                     }
                     catch (Exception ex) { MessageBox.Show("Erro SQL ao emitir fatura: " + ex.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error); }
                 }
@@ -169,6 +246,7 @@ namespace WinFormsApp4
         {
             LimparCampos();
             CarregarGrelha(txtPesquisa.Text);
+            SelecionarLinhaNaGrelha(0); // Seleciona o primeiro da lista
         }
 
         private void LimparCampos()
@@ -182,21 +260,15 @@ namespace WinFormsApp4
             txtValorTotal.Clear();
         }
 
-        private void btnVoltar_Click(object sender, EventArgs e) => Navegacao.Voltar(this);
-        private void btnPesquisar_Click(object sender, EventArgs e) => CarregarGrelha(txtPesquisa.Text);
-        private void txtPesquisa_TextChanged(object sender, EventArgs e) => CarregarGrelha(txtPesquisa.Text);
-
         private void btnEliminar_Click(object sender, EventArgs e)
         {
-            // Verificamos se há algo selecionado e se estamos no modo de Faturas Emitidas
             if (idAgendSelecionado == 0 || cbFiltro.SelectedIndex == 0)
             {
                 MessageBox.Show("Selecione uma fatura emitida para eliminar!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string mensagem = $"Tem a certeza que deseja eliminar a fatura do agendamento {idAgendSelecionado}?\n\n" +
-                              "O agendamento voltará a aparecer na lista 'Por Faturar'.";
+            string mensagem = $"Tem a certeza que deseja eliminar a fatura do agendamento {idAgendSelecionado}?\n\nO agendamento voltará a aparecer na lista 'Por Faturar'.";
 
             if (MessageBox.Show(mensagem, "Eliminar Fatura", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
@@ -205,20 +277,25 @@ namespace WinFormsApp4
                     try
                     {
                         CN.Open();
-                        // Eliminamos apenas o registo na tabela FATURACAO
-                        // O Agendamento permanece intacto, apenas deixa de estar ligado a uma fatura
-                        string sql = "DELETE FROM DETAIL_AUTOMOVEL.FATURACAO WHERE Num_Agend = @agend";
+                        int agendamentoApagado = idAgendSelecionado; // Memoriza o ID
 
+                        string sql = "DELETE FROM DETAIL_AUTOMOVEL.FATURACAO WHERE Num_Agend = @agend";
                         using (SqlCommand cmd = new SqlCommand(sql, CN))
                         {
-                            cmd.Parameters.AddWithValue("@agend", idAgendSelecionado);
+                            cmd.Parameters.AddWithValue("@agend", agendamentoApagado);
                             cmd.ExecuteNonQuery();
                         }
 
                         MessageBox.Show("Fatura eliminada com sucesso!", "Sucesso", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                        LimparCampos();
+                        // Muda para o separador pendentes para o utilizador ver a fatura que devolveu
+                        cbFiltro.SelectedIndex = 0;
+
                         CarregarGrelha(txtPesquisa.Text);
+                        AtualizarFaturacaoDoMes();
+
+                        // Foca na fatura que voltou aos pendentes
+                        SelecionarLinhaNaGrelha(agendamentoApagado);
                     }
                     catch (Exception ex)
                     {
@@ -227,5 +304,9 @@ namespace WinFormsApp4
                 }
             }
         }
+
+        private void btnVoltar_Click(object sender, EventArgs e) => Navegacao.Voltar(this);
+        private void btnPesquisar_Click(object sender, EventArgs e) => CarregarGrelha(txtPesquisa.Text);
+        private void txtPesquisa_TextChanged(object sender, EventArgs e) => CarregarGrelha(txtPesquisa.Text);
     }
 }
